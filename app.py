@@ -3,6 +3,8 @@ import requests
 import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
+import schedule
+import time
 
 app = Flask(__name__)
 
@@ -47,10 +49,20 @@ def generate_distance_graph(data):
 
     return img_str
 
+# Function to update data periodically
+def update_data():
+    global neo_data
+    neo_data = fetch_neo_data()
+
+# Schedule data update every hour
+schedule.every().hour.do(update_data)
+
+# Initial data fetch
+neo_data = fetch_neo_data()
+
 # Route to display graph
 @app.route('/')
 def show_graph():
-    neo_data = fetch_neo_data()
     if neo_data:
         img_str = generate_distance_graph(neo_data)
         return render_template('graph.html', img_str=img_str)
@@ -58,4 +70,7 @@ def show_graph():
         return "Failed to fetch NEO data"
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+        app.run(debug=True)
